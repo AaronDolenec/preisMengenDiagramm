@@ -61,7 +61,7 @@ GitHub Actions (CI/CD)
   3. Builds optimized production-ready Vite bundle
   4. Creates multi-platform Docker image (using Docker Buildx)
   5. Authenticates with GitHub Container Registry (GHCR)
-  6. Pushes image to `ghcr.io/${{ github.repository_owner }}/preismengendiagramm:latest`
+  6. Pushes image to `ghcr.io/aarondolenec/preisMengenDiagramm:latest`
 
 **Authentication notes:**
 - Uses default `GITHUB_TOKEN` (automatically created for public repos)
@@ -73,7 +73,7 @@ GitHub Actions (CI/CD)
 
 ```bash
 # Clone repository
-git clone https://github.com/YOUR_USERNAME/preisMengenDiagramm.git
+git clone https://github.com/aarondolenec/preisMengenDiagramm.git
 cd preisMengenDiagramm
 
 # Build Docker image
@@ -93,10 +93,10 @@ docker stop preisMengenDiagramm
 
 ```bash
 # Pull latest image from GHCR
-docker pull ghcr.io/YOUR_USERNAME/preisMengenDiagramm:latest
+docker pull ghcr.io/aarondolenec/preisMengenDiagramm:latest
 
 # Run container
-docker run -d -p 8080:80 --name preisMengenDiagramm ghcr.io/YOUR_USERNAME/preisMengenDiagramm:latest
+docker run -d -p 8080:80 --name preisMengenDiagramm ghcr.io/aarondolenec/preisMengenDiagramm:latest
 
 # Access at http://localhost:8080
 ```
@@ -109,7 +109,7 @@ Create `docker-compose.yml`:
 version: '3.8'
 services:
   preisMengenDiagramm:
-    image: ghcr.io/YOUR_USERNAME/preisMengenDiagramm:latest
+    image: ghcr.io/aarondolenec/preisMengenDiagramm:latest
     ports:
       - "8080:80"
     environment:
@@ -143,7 +143,7 @@ spec:
     spec:
       containers:
       - name: preisMengenDiagramm
-        image: ghcr.io/YOUR_USERNAME/preisMengenDiagramm:latest
+        image: ghcr.io/aarondolenec/preisMengenDiagramm:latest
         ports:
         - containerPort: 80
         resources:
