@@ -394,16 +394,25 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
             <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" fill={axisColor} />
             </marker>
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d={`M 40 0 L 0 0 0 40`} fill="none" stroke={darkMode ? '#334155' : '#e2e8f0'} strokeWidth="0.5" opacity="0.5" />
+            </pattern>
           </defs>
 
-          <text x={width / 2} y={padding - 10} textAnchor="middle" fontSize="22" fontWeight="bold" fill={textColor}>{chart.title}</text>
+          {/* Background Grid */}
+          <rect x={padding} y={padding} width={width - padding * 2} height={height - padding * 2} fill={`url(#grid)`} />
 
-          {/* Achsen */}
-          <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke={axisColor} strokeWidth="3" markerStart="url(#arrow)" />
-          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke={axisColor} strokeWidth="3" markerEnd="url(#arrow)" />
-          <text x={padding - 20} y={padding + 10} textAnchor="end" fontSize="18" fontWeight="bold" fill={axisColor}>Preis</text>
-          <text x={width - padding + 20} y={height - padding + 25} textAnchor="start" fontSize="18" fontWeight="bold" fill={axisColor}>Menge</text>
-          <text x={padding - 15} y={height - padding + 20} textAnchor="end" fontSize="16" fill={darkMode ? '#94a3b8' : '#94a3b8'}>0</text>
+          {/* Title */}
+          <text x={width / 2} y={padding - 20} textAnchor="middle" fontSize="24" fontWeight="bold" fill={textColor}>{chart.title}</text>
+
+          {/* Axes */}
+          <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke={axisColor} strokeWidth="2.5" markerStart="url(#arrow)" />
+          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke={axisColor} strokeWidth="2.5" markerEnd="url(#arrow)" />
+          
+          {/* Axis Labels */}
+          <text x={padding - 30} y={padding - 5} textAnchor="end" fontSize="16" fontWeight="600" fill={axisColor}>Preis (P)</text>
+          <text x={width - padding - 10} y={height - padding + 30} textAnchor="end" fontSize="16" fontWeight="600" fill={axisColor}>Menge (Q)</text>
+          <text x={padding - 12} y={height - padding + 18} textAnchor="end" dominantBaseline="middle" fontSize="14" fontWeight="500" fill={darkMode ? '#94a3b8' : '#94a3b8'}>0</text>
 
           <clipPath id={`clip-${chart.id}`}><rect x={padding} y={padding} width={width - padding*2} height={height - padding*2} /></clipPath>
 
@@ -423,15 +432,15 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
               return (
                 <g>
-                  <line x1={padding} y1={mapCoord(p, true)} x2={width} y2={mapCoord(p, true)} stroke="#d97706" strokeWidth="3" strokeDasharray="8,4" />
+                  <line x1={padding} y1={mapCoord(p, true)} x2={width - padding} y2={mapCoord(p, true)} stroke="#d97706" strokeWidth="2.5" strokeDasharray="6,3" opacity="0.8" />
                   {dCurve && sCurve && qD !== qS && (
                     <g>
-                      <line x1={mapCoord(Math.min(qD, qS))} y1={mapCoord(p, true)} x2={mapCoord(Math.max(qD, qS))} y2={mapCoord(p, true)} stroke="#f59e0b" strokeWidth="8" opacity="0.5" />
-                      <text x={mapCoord((qD + qS)/2)} y={mapCoord(p, true) - 15} textAnchor="middle" fontSize="14" fontWeight="bold" fill="#b45309">
+                      <line x1={mapCoord(Math.min(qD, qS))} y1={mapCoord(p, true)} x2={mapCoord(Math.max(qD, qS))} y2={mapCoord(p, true)} stroke="#f59e0b" strokeWidth="6" opacity="0.35" />
+                      <text x={mapCoord((qD + qS)/2)} y={mapCoord(p, true) - 18} textAnchor="middle" fontSize="12" fontWeight="600" fill="#b45309" opacity="0.9">
                         {qD > qS ? 'Nachfrageüberhang' : 'Angebotsüberschuss'}
                       </text>
-                      <line x1={mapCoord(qD)} y1={mapCoord(p, true)} x2={mapCoord(qD)} y2={height - padding} stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="4,4" />
-                      <line x1={mapCoord(qS)} y1={mapCoord(p, true)} x2={mapCoord(qS)} y2={height - padding} stroke="#ef4444" strokeWidth="1.5" strokeDasharray="4,4" />
+                      <line x1={mapCoord(qD)} y1={mapCoord(p, true)} x2={mapCoord(qD)} y2={height - padding} stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="3,3" opacity="0.6" />
+                      <line x1={mapCoord(qS)} y1={mapCoord(p, true)} x2={mapCoord(qS)} y2={height - padding} stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" opacity="0.6" />
                     </g>
                   )}
                 </g>
@@ -442,7 +451,7 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
             {mathCurves.map((curve) => {
               let q1, q2, p1 = 200, p2 = -100;
               
-              if (curve.b < 0.01) { // Waagerecht
+              if (curve.b < 0.01) {
                 q1 = -100; p1 = curve.a;
                 q2 = 200;  p2 = curve.a;
               } else {
@@ -457,10 +466,9 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
               return (
                 <g key={curve.id}>
-                  <line x1={mapCoord(q1)} y1={mapCoord(p1, true)} x2={mapCoord(q2)} y2={mapCoord(p2, true)} stroke={curve.color} strokeWidth="4" strokeLinecap="round" />
-                  <rect x={mapCoord(labelQ)-12} y={mapCoord(labelP, true)-12} width="24" height="24" fill={darkMode ? '#1e293b' : 'white'} rx="12" />
-                  <circle cx={mapCoord(labelQ)} cy={mapCoord(labelP, true)} r="12" fill="transparent" stroke={curve.color} strokeWidth="2" />
-                  <text x={mapCoord(labelQ)} y={mapCoord(labelP, true)} textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="bold" fill={curve.color}>{curve.name}</text>
+                  <line x1={mapCoord(q1)} y1={mapCoord(p1, true)} x2={mapCoord(q2)} y2={mapCoord(p2, true)} stroke={curve.color} strokeWidth="3.5" strokeLinecap="round" opacity="0.9" />
+                  <rect x={mapCoord(labelQ)-13} y={mapCoord(labelP, true)-13} width="26" height="26" fill={darkMode ? '#1e293b' : '#ffffff'} rx="13" strokeWidth="2" stroke={curve.color} opacity="0.95" />
+                  <text x={mapCoord(labelQ)} y={mapCoord(labelP, true)} textAnchor="middle" dominantBaseline="central" fontSize="13" fontWeight="700" fill={curve.color}>{curve.name}</text>
                 </g>
               );
             })}
@@ -468,19 +476,19 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
           {/* Eingriffs-Label außerhalb Clip */}
           {chart.policy.type !== 'none' && (
-            <text x={padding - 10} y={mapCoord(chart.policy.price, true)} textAnchor="end" dominantBaseline="middle" fontSize="14" fontWeight="bold" fill="#d97706">
+            <text x={padding - 12} y={mapCoord(chart.policy.price, true)} textAnchor="end" dominantBaseline="middle" fontSize="13" fontWeight="600" fill="#d97706" letterSpacing="0.5">
               {chart.policy.type === 'ceiling' ? 'P_max' : 'P_min'}
             </text>
           )}
 
-          {/* Schnittpunkte */}
+          {/* Schnittpunkte (Equilibrium) */}
           {intersections.map((pt, i) => (
             <g key={`eq-${i}`}>
-              <line x1={padding} y1={mapCoord(pt.p, true)} x2={mapCoord(pt.q)} y2={mapCoord(pt.p, true)} stroke="#475569" strokeWidth="2" strokeDasharray="5,5" />
-              <line x1={mapCoord(pt.q)} y1={mapCoord(pt.p, true)} x2={mapCoord(pt.q)} y2={height - padding} stroke="#475569" strokeWidth="2" strokeDasharray="5,5" />
-              <circle cx={mapCoord(pt.q)} cy={mapCoord(pt.p, true)} r="6" fill={textColor} stroke={darkMode ? '#1e293b' : 'white'} strokeWidth="2" />
-              <text x={padding - 10} y={mapCoord(pt.p, true)} textAnchor="end" dominantBaseline="middle" fontSize="14" fontWeight="bold" fill={textColor}>P*</text>
-              <text x={mapCoord(pt.q)} y={height - padding + 20} textAnchor="middle" fontSize="14" fontWeight="bold" fill={textColor}>Q*</text>
+              <line x1={padding} y1={mapCoord(pt.p, true)} x2={mapCoord(pt.q)} y2={mapCoord(pt.p, true)} stroke={darkMode ? '#64748b' : '#cbd5e1'} strokeWidth="1.5" strokeDasharray="4,4" />
+              <line x1={mapCoord(pt.q)} y1={mapCoord(pt.p, true)} x2={mapCoord(pt.q)} y2={height - padding} stroke={darkMode ? '#64748b' : '#cbd5e1'} strokeWidth="1.5" strokeDasharray="4,4" />
+              <circle cx={mapCoord(pt.q)} cy={mapCoord(pt.p, true)} r="7" fill={textColor} stroke={darkMode ? '#1e293b' : 'white'} strokeWidth="2.5" />
+              <text x={padding - 15} y={mapCoord(pt.p, true)} textAnchor="end" dominantBaseline="middle" fontSize="13" fontWeight="600" fill={textColor} letterSpacing="0.5">P*</text>
+              <text x={mapCoord(pt.q)} y={height - padding + 22} textAnchor="middle" dominantBaseline="hanging" fontSize="13" fontWeight="600" fill={textColor} letterSpacing="0.5">Q*</text>
             </g>
           ))}
         </svg>
