@@ -409,10 +409,37 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
           <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke={axisColor} strokeWidth="2.5" markerStart="url(#arrow)" />
           <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke={axisColor} strokeWidth="2.5" markerEnd="url(#arrow)" />
           
-          {/* Axis Labels */}
-          <text x={padding - 30} y={padding - 5} textAnchor="end" fontSize="16" fontWeight="600" fill={axisColor}>Preis (P)</text>
-          <text x={width - padding - 10} y={height - padding + 30} textAnchor="end" fontSize="16" fontWeight="600" fill={axisColor}>Menge (Q)</text>
-          <text x={padding - 12} y={height - padding + 18} textAnchor="end" dominantBaseline="middle" fontSize="14" fontWeight="500" fill={darkMode ? '#94a3b8' : '#94a3b8'}>0</text>
+          {/* Axis Labels - Positioned inside viewBox */}
+          <g>
+            {/* Y-axis label - Preis (P) */}
+            <text 
+              x={padding + 10} 
+              y={padding - 8} 
+              fontSize="15" 
+              fontWeight="600" 
+              fill={axisColor}
+            >Preis (P)</text>
+            
+            {/* X-axis label - Menge (Q) */}
+            <text 
+              x={width - padding - 50} 
+              y={height - padding + 25} 
+              fontSize="15" 
+              fontWeight="600" 
+              fill={axisColor}
+            >Menge (Q)</text>
+            
+            {/* Origin label - 0 */}
+            <text 
+              x={padding - 8} 
+              y={height - padding + 16} 
+              textAnchor="end" 
+              dominantBaseline="middle" 
+              fontSize="13" 
+              fontWeight="500" 
+              fill={darkMode ? '#94a3b8' : '#94a3b8'}
+            >0</text>
+          </g>
 
           <clipPath id={`clip-${chart.id}`}><rect x={padding} y={padding} width={width - padding*2} height={height - padding*2} /></clipPath>
 
