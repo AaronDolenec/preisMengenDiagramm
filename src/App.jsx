@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Plus, Trash2, Download, BookOpen, Scale, ArrowRightLeft, Copy, LayoutGrid } from 'lucide-react';
+import { Plus, Trash2, Download, BookOpen, Scale, ArrowRightLeft, Copy, LayoutGrid, Moon, Sun } from 'lucide-react';
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
@@ -18,13 +18,18 @@ const calcIntercept = (type, position, b) => {
 };
 
 export default function App() {
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
+  const handleDarkModeToggle = (value) => {
+    setDarkMode(value);
+    localStorage.setItem('darkMode', value ? 'true' : 'false');
+  };
   const [charts, setCharts] = useState([
     {
       id: 'chart-1',
-      title: 'Markt A (Vorher)',
+      title: 'Markt A (Ausgangslage)',
       curves: [
-        { id: 'd1', type: 'demand', name: 'N1', position: 50, elasticity: 50, color: '#3b82f6' },
-        { id: 's1', type: 'supply', name: 'A1', position: 50, elasticity: 50, color: '#ef4444' },
+        { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
+        { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
       ],
       policy: { type: 'none', price: 50 }
     }
@@ -38,8 +43,8 @@ export default function App() {
       id: Date.now().toString(),
       title: `Markt ${charts.length + 1}`,
       curves: [
-        { id: Date.now().toString() + 'd', type: 'demand', name: 'N1', position: 50, elasticity: 50, color: '#3b82f6' },
-        { id: Date.now().toString() + 's', type: 'supply', name: 'A1', position: 50, elasticity: 50, color: '#ef4444' },
+        { id: Date.now().toString() + 'd', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
+        { id: Date.now().toString() + 's', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
       ],
       policy: { type: 'none', price: 50 }
     };
@@ -78,10 +83,11 @@ export default function App() {
 
   const addCurve = (type) => {
     const isDemand = type === 'demand';
+    const existingCount = activeChart.curves.filter(c => c.type === type).length;
     const newCurve = {
       id: Date.now().toString(),
       type,
-      name: `${isDemand ? 'N' : 'A'}${activeChart.curves.filter(c => c.type === type).length + 1}`,
+      name: isDemand ? (existingCount === 0 ? 'D' : `D${existingCount + 1}`) : (existingCount === 0 ? 'S' : `S${existingCount + 1}`),
       position: isDemand ? 70 : 30,
       elasticity: 50,
       color: COLORS[activeChart.curves.length % COLORS.length]
@@ -95,109 +101,153 @@ export default function App() {
 
   const loadScenario = (scenario) => {
     switch(scenario) {
+      case 'initial':
+        updateActiveChart({
+          curves: [
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+          ], policy: { type: 'none', price: 50 }
+        }); break;
       case 'inelastic_demand':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'N', position: 50, elasticity: 0, color: '#3b82f6' },
-            { id: 's1', type: 'supply', name: 'A', position: 50, elasticity: 50, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 0, color: '#3b82f6' },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
           ], policy: { type: 'none', price: 50 }
         }); break;
       case 'elastic_supply':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'N', position: 50, elasticity: 50, color: '#3b82f6' },
-            { id: 's1', type: 'supply', name: 'A', position: 50, elasticity: 100, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 100, color: '#ef4444' },
           ], policy: { type: 'none', price: 50 }
         }); break;
-      case 'demand_shock':
+      case 'demand_shift':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'N1', position: 40, elasticity: 50, color: '#93c5fd' },
-            { id: 'd2', type: 'demand', name: 'N2', position: 70, elasticity: 50, color: '#2563eb' },
-            { id: 's1', type: 'supply', name: 'A', position: 50, elasticity: 50, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D₁', position: 40, elasticity: 50, color: '#93c5fd' },
+            { id: 'd2', type: 'demand', name: 'D₂', position: 70, elasticity: 50, color: '#2563eb' },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
           ], policy: { type: 'none', price: 50 }
+        }); break;
+      case 'supply_shift':
+        updateActiveChart({
+          curves: [
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
+            { id: 's1', type: 'supply', name: 'S₁', position: 30, elasticity: 50, color: '#fca5a5' },
+            { id: 's2', type: 'supply', name: 'S₂', position: 70, elasticity: 50, color: '#dc2626' },
+          ], policy: { type: 'none', price: 50 }
+        }); break;
+      case 'tax':
+        updateActiveChart({
+          curves: [
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+          ], policy: { type: 'ceiling', price: 60 }
+        }); break;
+      case 'subsidy':
+        updateActiveChart({
+          curves: [
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+          ], policy: { type: 'floor', price: 40 }
         }); break;
       default: break;
     }
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-slate-100 text-slate-800 font-sans">
-      <div className="w-full md:w-[420px] bg-white border-r border-slate-200 shadow-xl z-10 flex flex-col h-full">
-        <div className="p-4 bg-slate-800 text-white flex justify-between items-center">
+    <div className={`flex flex-col md:flex-row h-screen ${darkMode ? 'bg-slate-900 text-slate-100' : 'bg-slate-100 text-slate-800'} font-sans transition-colors`}>
+      
+      {/* SIDEBAR: Controls */}
+      <div className={`w-full md:w-[420px] ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border-r shadow-xl z-10 flex flex-col h-full transition-colors`}>
+        <div className={`p-4 ${darkMode ? 'bg-slate-700' : 'bg-slate-800'} text-white flex justify-between items-center transition-colors`}>
           <div className="flex items-center gap-2">
             <LayoutGrid className="w-5 h-5 text-blue-400" />
             <h1 className="text-lg font-bold">VWL Multi-Editor</h1>
           </div>
-          <button onClick={addChart} className="flex items-center gap-1 text-xs bg-blue-600 px-3 py-1.5 rounded hover:bg-blue-500 transition font-medium">
-            <Plus className="w-3 h-3" /> Graph
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => handleDarkModeToggle(!darkMode)} className="p-2 hover:bg-slate-600 rounded transition" title={darkMode ? 'Light mode' : 'Dark mode'}>
+              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <button onClick={addChart} className="flex items-center gap-1 text-xs bg-blue-600 px-3 py-1.5 rounded hover:bg-blue-500 transition font-medium">
+              <Plus className="w-3 h-3" /> Graph
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-8">
+          
+          {/* Chart Konfiguration */}
           <section>
-            <h2 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider flex items-center gap-2">
+            <h2 className={`text-xs font-bold uppercase ${darkMode ? 'text-slate-400' : 'text-slate-500'} mb-3 tracking-wider flex items-center gap-2`}>
               <BookOpen className="w-4 h-4"/> Diagramm-Info
             </h2>
             <input
               type="text"
               value={activeChart.title}
               onChange={(e) => updateActiveChart({ title: e.target.value })}
-              className="w-full text-sm p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50"
+              className={`w-full text-sm p-2 border ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-100 focus:ring-blue-600' : 'bg-slate-50 border-slate-300 focus:ring-blue-500'} rounded focus:ring-2 outline-none transition-colors`}
               placeholder="Titel des Diagramms"
             />
           </section>
 
+          {/* Quick-Szenarien */}
           <section>
-            <h2 className="text-xs font-bold uppercase text-slate-500 mb-3 tracking-wider">Schnell-Szenarien</h2>
+            <h2 className={`text-xs font-bold uppercase ${darkMode ? 'text-slate-400' : 'text-slate-500'} mb-3 tracking-wider`}>VWL-Szenarien</h2>
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => loadScenario('demand_shock')} className="text-xs p-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded text-left font-medium transition">Nachfrageschock</button>
-              <button onClick={() => loadScenario('inelastic_demand')} className="text-xs p-2 bg-slate-100 hover:bg-slate-200 rounded text-left font-medium transition">Unelastische Nachfrage</button>
-              <button onClick={() => loadScenario('elastic_supply')} className="text-xs p-2 bg-slate-100 hover:bg-slate-200 rounded text-left font-medium transition">Elastisches Angebot</button>
+              <button onClick={() => loadScenario('initial')} className={`text-xs p-2 rounded text-left font-medium transition ${darkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}>Gleichgewicht</button>
+              <button onClick={() => loadScenario('demand_shift')} className={`text-xs p-2 rounded text-left font-medium transition ${darkMode ? 'bg-blue-900 text-blue-200 hover:bg-blue-800' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}`}>Nachfrageshift</button>
+              <button onClick={() => loadScenario('supply_shift')} className={`text-xs p-2 rounded text-left font-medium transition ${darkMode ? 'bg-red-900 text-red-200 hover:bg-red-800' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}>Angebotsshift</button>
+              <button onClick={() => loadScenario('inelastic_demand')} className={`text-xs p-2 rounded text-left font-medium transition ${darkMode ? 'bg-slate-700 text-slate-200 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}>Unelastisch</button>
+              <button onClick={() => loadScenario('tax')} className={`text-xs p-2 rounded text-left font-medium transition ${darkMode ? 'bg-amber-900 text-amber-200 hover:bg-amber-800' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}`}>Steuer</button>
+              <button onClick={() => loadScenario('subsidy')} className={`text-xs p-2 rounded text-left font-medium transition ${darkMode ? 'bg-green-900 text-green-200 hover:bg-green-800' : 'bg-green-50 text-green-700 hover:bg-green-100'}`}>Subvention</button>
             </div>
           </section>
 
+          {/* Kurven-Manager */}
           <section>
             <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xs font-bold uppercase text-slate-500 tracking-wider">Akteure (Kurven)</h2>
+              <h2 className={`text-xs font-bold uppercase ${darkMode ? 'text-slate-400' : 'text-slate-500'} tracking-wider`}>Akteure (Kurven)</h2>
               <div className="flex gap-2">
-                <button onClick={() => addCurve('demand')} className="text-xs font-bold px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">+ Nachfrage</button>
-                <button onClick={() => addCurve('supply')} className="text-xs font-bold px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200">+ Angebot</button>
+                <button onClick={() => addCurve('demand')} className={`text-xs font-bold px-2 py-1 rounded transition ${darkMode ? 'bg-blue-900 text-blue-200 hover:bg-blue-800' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}>+ Nachfrage</button>
+                <button onClick={() => addCurve('supply')} className={`text-xs font-bold px-2 py-1 rounded transition ${darkMode ? 'bg-red-900 text-red-200 hover:bg-red-800' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>+ Angebot</button>
               </div>
             </div>
 
             <div className="space-y-4">
               {activeChart.curves.map(curve => (
-                <div key={curve.id} className={`p-4 border rounded-xl bg-white shadow-sm ${curve.type === 'demand' ? 'border-blue-200' : 'border-red-200'}`}>
+                <div key={curve.id} className={`p-4 border rounded-xl ${darkMode ? `bg-slate-700 ${curve.type === 'demand' ? 'border-blue-700' : 'border-red-700'}` : `bg-white ${curve.type === 'demand' ? 'border-blue-200' : 'border-red-200'}`} shadow-sm transition-colors`}>
                   <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: curve.color }} />
-                      <input type="text" value={curve.name} onChange={(e) => updateCurve(curve.id, 'name', e.target.value)} className="font-bold text-sm w-12 border-b border-transparent focus:border-slate-400 outline-none" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                      <input type="text" value={curve.name} onChange={(e) => updateCurve(curve.id, 'name', e.target.value)} className={`font-bold text-sm w-12 border-b outline-none transition-colors ${darkMode ? 'bg-slate-700 text-slate-100 border-slate-600 focus:border-slate-400' : 'bg-transparent border-transparent focus:border-slate-400'}`} />
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${darkMode ? 'text-slate-400 bg-slate-600' : 'text-slate-400 bg-slate-100'} px-1.5 py-0.5 rounded transition-colors`}>
                         {curve.type === 'demand' ? 'Nachfrage' : 'Angebot'}
                       </span>
                     </div>
-                    <button onClick={() => removeCurve(curve.id)} className="text-slate-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => removeCurve(curve.id)} className={`${darkMode ? 'text-slate-500 hover:text-red-400' : 'text-slate-400 hover:text-red-500'} transition`}><Trash2 className="w-4 h-4" /></button>
                   </div>
 
+                  {/* VWL Sliders */}
                   <div className="space-y-4">
                     <div>
-                      <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
+                      <div className={`flex justify-between text-xs font-medium ${darkMode ? 'text-slate-300' : 'text-slate-600'} mb-1`}>
                         <span className="flex items-center gap-1"><ArrowRightLeft className="w-3 h-3"/> Verschiebung</span>
-                        <span className="text-slate-400">{curve.position < 50 ? 'Links' : curve.position > 50 ? 'Rechts' : 'Mitte'}</span>
+                        <span className={darkMode ? 'text-slate-500' : 'text-slate-400'}>{curve.position < 50 ? 'Links' : curve.position > 50 ? 'Rechts' : 'Mitte'}</span>
                       </div>
                       <input type="range" min="5" max="95" value={curve.position} onChange={(e) => updateCurve(curve.id, 'position', Number(e.target.value))} className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer ${curve.type === 'demand' ? 'bg-blue-200 accent-blue-600' : 'bg-red-200 accent-red-600'}`} />
-                      <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                      <div className={`flex justify-between text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'} mt-1`}>
                         <span>Rückgang</span><span>Anstieg</span>
                       </div>
                     </div>
 
                     <div>
-                      <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
+                      <div className={`flex justify-between text-xs font-medium ${darkMode ? 'text-slate-300' : 'text-slate-600'} mb-1`}>
                         <span className="flex items-center gap-1"><Scale className="w-3 h-3"/> Elastizität</span>
                       </div>
-                      <input type="range" min="0" max="100" value={curve.elasticity} onChange={(e) => updateCurve(curve.id, 'elasticity', Number(e.target.value))} className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-slate-700" />
-                      <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                      <input type="range" min="0" max="100" value={curve.elasticity} onChange={(e) => updateCurve(curve.id, 'elasticity', Number(e.target.value))} className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer ${darkMode ? 'bg-slate-600 accent-slate-400' : 'bg-slate-200 accent-slate-700'}`} />
+                      <div className={`flex justify-between text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'} mt-1`}>
                         <span>Unelastisch (Steil)</span><span>Elastisch (Flach)</span>
                       </div>
                     </div>
@@ -207,17 +257,18 @@ export default function App() {
             </div>
           </section>
 
-          <section className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-            <h2 className="text-xs font-bold uppercase text-amber-800 mb-3 tracking-wider">Staatliche Eingriffe</h2>
+          {/* Staatliche Eingriffe */}
+          <section className={`p-4 rounded-xl ${darkMode ? 'bg-amber-900/50 border-amber-700' : 'bg-amber-50 border-amber-200'} border transition-colors`}>
+            <h2 className={`text-xs font-bold uppercase ${darkMode ? 'text-amber-200' : 'text-amber-800'} mb-3 tracking-wider`}>Staatliche Eingriffe</h2>
             <div className="flex gap-2 mb-3">
               {['none', 'ceiling', 'floor'].map(type => (
                 <button 
                   key={type}
                   onClick={() => updateActiveChart({ policy: { ...activeChart.policy, type } })}
-                  className={`flex-1 text-[11px] py-1.5 px-1 rounded font-medium border ${
+                  className={`flex-1 text-[11px] py-1.5 px-1 rounded font-medium border transition-colors ${
                     activeChart.policy.type === type 
-                      ? 'bg-amber-600 text-white border-amber-600' 
-                      : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-100'
+                      ? `bg-amber-600 text-white border-amber-600 ${darkMode ? 'bg-amber-700' : ''}`
+                      : `${darkMode ? 'bg-slate-700 text-amber-200 border-amber-700 hover:bg-slate-600' : 'bg-white text-amber-700 border-amber-300 hover:bg-amber-100'}`
                   }`}
                 >
                   {type === 'none' ? 'Freier Markt' : type === 'ceiling' ? 'Höchstpreis' : 'Mindestpreis'}
@@ -226,14 +277,14 @@ export default function App() {
             </div>
             {activeChart.policy.type !== 'none' && (
               <div>
-                <div className="flex justify-between text-xs font-medium text-amber-800 mb-1">
+                <div className={`flex justify-between text-xs font-medium ${darkMode ? 'text-amber-200' : 'text-amber-800'} mb-1`}>
                   <span>Preisniveau festlegen</span>
                 </div>
                 <input 
                   type="range" min="10" max="90" 
                   value={activeChart.policy.price} 
                   onChange={(e) => updateActiveChart({ policy: { ...activeChart.policy, price: Number(e.target.value) } })}
-                  className="w-full h-1.5 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-600" 
+                  className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer ${darkMode ? 'bg-amber-700 accent-amber-600' : 'bg-amber-200 accent-amber-600'}`}
                 />
               </div>
             )}
@@ -242,7 +293,8 @@ export default function App() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">
+      {/* MAIN GRID */}
+      <div className={`flex-1 overflow-y-auto p-4 md:p-8 ${darkMode ? 'bg-slate-900' : 'bg-slate-100'} transition-colors`}>
         <div className={`grid gap-6 ${charts.length > 1 ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1 max-w-4xl mx-auto'}`}>
           {charts.map(chart => (
             <ChartRenderer 
@@ -253,6 +305,7 @@ export default function App() {
               onDuplicate={() => duplicateChart(chart.id)}
               onDelete={() => deleteChart(chart.id)}
               canDelete={charts.length > 1}
+              darkMode={darkMode}
             />
           ))}
         </div>
@@ -261,7 +314,7 @@ export default function App() {
   );
 }
 
-function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDelete }) {
+function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDelete, darkMode }) {
   const svgRef = useRef(null);
 
   const mathCurves = useMemo(() => {
@@ -310,22 +363,26 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
     link.click();
   };
 
+  const axisColor = darkMode ? '#cbd5e1' : '#334155';
+  const textColor = darkMode ? '#f1f5f9' : '#1e293b';
+
   return (
     <div 
       onClick={onSelect}
-      className={`relative bg-white rounded-2xl shadow-lg transition-all duration-200 cursor-pointer flex flex-col group overflow-hidden
-        ${isActive ? 'ring-4 ring-blue-500 transform scale-[1.01]' : 'hover:shadow-xl hover:ring-2 hover:ring-slate-300'}`}
+      className={`relative rounded-2xl shadow-lg transition-all duration-200 cursor-pointer flex flex-col group overflow-hidden
+        ${darkMode ? 'bg-slate-800' : 'bg-white'} 
+        ${isActive ? `ring-4 transform scale-[1.01] ${darkMode ? 'ring-blue-600' : 'ring-blue-500'}` : `hover:shadow-xl hover:ring-2 ${darkMode ? 'hover:ring-slate-600' : 'hover:ring-slate-300'}`}`}
     >
       {/* Chart Toolbar */}
       <div className={`absolute top-4 right-4 z-10 flex gap-2 transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-        <button onClick={(e) => { e.stopPropagation(); onDuplicate(); }} className="p-2 bg-white text-slate-700 rounded-lg shadow-md hover:bg-slate-50 border border-slate-200" title="Graph duplizieren">
+        <button onClick={(e) => { e.stopPropagation(); onDuplicate(); }} className={`p-2 rounded-lg shadow-md border transition ${darkMode ? 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`} title="Graph duplizieren">
           <Copy className="w-4 h-4" />
         </button>
-        <button onClick={exportSVG} className="p-2 bg-slate-800 text-white rounded-lg shadow-md hover:bg-slate-700" title="SVG Export">
+        <button onClick={exportSVG} className={`p-2 rounded-lg shadow-md transition ${darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-800 text-white hover:bg-slate-700'}`} title="SVG Export">
           <Download className="w-4 h-4" />
         </button>
         {canDelete && (
-          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700" title="Löschen">
+          <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="p-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition" title="Löschen">
             <Trash2 className="w-4 h-4" />
           </button>
         )}
@@ -335,18 +392,18 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
         <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
+              <path d="M 0 0 L 10 5 L 0 10 z" fill={axisColor} />
             </marker>
           </defs>
 
-          <text x={width / 2} y={padding - 10} textAnchor="middle" fontSize="22" fontWeight="bold" fill="#1e293b">{chart.title}</text>
+          <text x={width / 2} y={padding - 10} textAnchor="middle" fontSize="22" fontWeight="bold" fill={textColor}>{chart.title}</text>
 
           {/* Achsen */}
-          <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#334155" strokeWidth="3" markerStart="url(#arrow)" />
-          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#334155" strokeWidth="3" markerEnd="url(#arrow)" />
-          <text x={padding - 20} y={padding + 10} textAnchor="end" fontSize="18" fontWeight="bold" fill="#334155">Preis (P)</text>
-          <text x={width - padding + 20} y={height - padding + 25} textAnchor="start" fontSize="18" fontWeight="bold" fill="#334155">Menge (Q)</text>
-          <text x={padding - 15} y={height - padding + 20} textAnchor="end" fontSize="16" fill="#94a3b8">0</text>
+          <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke={axisColor} strokeWidth="3" markerStart="url(#arrow)" />
+          <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke={axisColor} strokeWidth="3" markerEnd="url(#arrow)" />
+          <text x={padding - 20} y={padding + 10} textAnchor="end" fontSize="18" fontWeight="bold" fill={axisColor}>Preis</text>
+          <text x={width - padding + 20} y={height - padding + 25} textAnchor="start" fontSize="18" fontWeight="bold" fill={axisColor}>Menge</text>
+          <text x={padding - 15} y={height - padding + 20} textAnchor="end" fontSize="16" fill={darkMode ? '#94a3b8' : '#94a3b8'}>0</text>
 
           <clipPath id={`clip-${chart.id}`}><rect x={padding} y={padding} width={width - padding*2} height={height - padding*2} /></clipPath>
 
@@ -401,7 +458,7 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
               return (
                 <g key={curve.id}>
                   <line x1={mapCoord(q1)} y1={mapCoord(p1, true)} x2={mapCoord(q2)} y2={mapCoord(p2, true)} stroke={curve.color} strokeWidth="4" strokeLinecap="round" />
-                  <rect x={mapCoord(labelQ)-12} y={mapCoord(labelP, true)-12} width="24" height="24" fill="white" rx="12" />
+                  <rect x={mapCoord(labelQ)-12} y={mapCoord(labelP, true)-12} width="24" height="24" fill={darkMode ? '#1e293b' : 'white'} rx="12" />
                   <circle cx={mapCoord(labelQ)} cy={mapCoord(labelP, true)} r="12" fill="transparent" stroke={curve.color} strokeWidth="2" />
                   <text x={mapCoord(labelQ)} y={mapCoord(labelP, true)} textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="bold" fill={curve.color}>{curve.name}</text>
                 </g>
@@ -421,9 +478,9 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
             <g key={`eq-${i}`}>
               <line x1={padding} y1={mapCoord(pt.p, true)} x2={mapCoord(pt.q)} y2={mapCoord(pt.p, true)} stroke="#475569" strokeWidth="2" strokeDasharray="5,5" />
               <line x1={mapCoord(pt.q)} y1={mapCoord(pt.p, true)} x2={mapCoord(pt.q)} y2={height - padding} stroke="#475569" strokeWidth="2" strokeDasharray="5,5" />
-              <circle cx={mapCoord(pt.q)} cy={mapCoord(pt.p, true)} r="6" fill="#1e293b" stroke="white" strokeWidth="2" />
-              <text x={padding - 10} y={mapCoord(pt.p, true)} textAnchor="end" dominantBaseline="middle" fontSize="14" fontWeight="bold" fill="#1e293b">P*</text>
-              <text x={mapCoord(pt.q)} y={height - padding + 20} textAnchor="middle" fontSize="14" fontWeight="bold" fill="#1e293b">Q*</text>
+              <circle cx={mapCoord(pt.q)} cy={mapCoord(pt.p, true)} r="6" fill={textColor} stroke={darkMode ? '#1e293b' : 'white'} strokeWidth="2" />
+              <text x={padding - 10} y={mapCoord(pt.p, true)} textAnchor="end" dominantBaseline="middle" fontSize="14" fontWeight="bold" fill={textColor}>P*</text>
+              <text x={mapCoord(pt.q)} y={height - padding + 20} textAnchor="middle" fontSize="14" fontWeight="bold" fill={textColor}>Q*</text>
             </g>
           ))}
         </svg>
@@ -431,7 +488,7 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
       {!isActive && (
         <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="bg-slate-900 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">Klicken zum Bearbeiten</span>
+          <span className={`${darkMode ? 'bg-slate-700 text-slate-100' : 'bg-slate-900 text-white'} px-4 py-2 rounded-full text-sm font-bold shadow-lg`}>Klicken zum Bearbeiten</span>
         </div>
       )}
     </div>
