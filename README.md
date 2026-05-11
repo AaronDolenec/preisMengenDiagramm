@@ -61,7 +61,7 @@ GitHub Actions (CI/CD)
   3. Builds optimized production-ready Vite bundle
   4. Creates multi-platform Docker image (using Docker Buildx)
   5. Authenticates with GitHub Container Registry (GHCR)
-  6. Pushes image to `ghcr.io/aarondolenec/preisMengenDiagramm:latest`
+  6. Pushes image to `ghcr.io/aarondolenec/preismengendiagramm:latest`
 
 **Authentication notes:**
 - Uses default `GITHUB_TOKEN` (automatically created for public repos)
@@ -69,57 +69,79 @@ GitHub Actions (CI/CD)
 
 ## Self-Hosting Guide
 
-### Option 1: Local Docker (Recommended for Testing)
+### Option 1: Docker Compose (Recommended)
 
-```bash
-# Clone repository
-git clone https://github.com/aarondolenec/preisMengenDiagramm.git
-cd preisMengenDiagramm
-
-# Build Docker image
-docker build -t preisMengenDiagramm:latest .
-
-# Run container (accessible at http://localhost:8080)
-docker run -d -p 8080:80 --name preisMengenDiagramm preisMengenDiagramm:latest
-
-# View logs
-docker logs preisMengenDiagramm
-
-# Stop container
-docker stop preisMengenDiagramm
-```
-
-### Option 2: Using Pre-built Image from GitHub Container Registry
-
-```bash
-# Pull latest image from GHCR
-docker pull ghcr.io/aarondolenec/preisMengenDiagramm:latest
-
-# Run container
-docker run -d -p 8080:80 --name preisMengenDiagramm ghcr.io/aarondolenec/preisMengenDiagramm:latest
-
-# Access at http://localhost:8080
-```
-
-### Option 3: Docker Compose (Multi-container Setup)
+**Easiest and most portable deployment method.**
 
 Create `docker-compose.yml`:
 
 ```yaml
 version: '3.8'
 services:
-  preisMengenDiagramm:
-    image: ghcr.io/aarondolenec/preisMengenDiagramm:latest
+  preismengendiagramm:
+    image: ghcr.io/aarondolenec/preismengendiagramm:latest
     ports:
       - "8080:80"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 ```
 
 Run:
 ```bash
+# Clone repository
+git clone https://github.com/aarondolenec/preismengendiagramm.git
+cd preismengendiagramm
+
+# Start the application
 docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the application
+docker-compose down
+```
+
+Access at http://localhost:8080
+
+### Option 2: Local Docker Build
+
+For testing with locally built image:
+
+```bash
+# Clone repository
+git clone https://github.com/aarondolenec/preismengendiagramm.git
+cd preismengendiagramm
+
+# Build Docker image
+docker build -t preismengendiagramm:latest .
+
+# Run container (accessible at http://localhost:8080)
+docker run -d -p 8080:80 --name preismengendiagramm preismengendiagramm:latest
+
+# View logs
+docker logs preismengendiagramm
+
+# Stop container
+docker stop preismengendiagramm
+```
+
+### Option 3: Using Pre-built Image from GitHub Container Registry
+
+```bash
+# Pull latest image from GHCR
+docker pull ghcr.io/aarondolenec/preismengendiagramm:latest
+
+# Run container
+docker run -d -p 8080:80 --name preismengendiagramm ghcr.io/aarondolenec/preismengendiagramm:latest
+
+# Access at http://localhost:8080
 ```
 
 ### Option 4: Kubernetes Deployment
@@ -142,8 +164,8 @@ spec:
         app: preis-mengen-diagramm
     spec:
       containers:
-      - name: preisMengenDiagramm
-        image: ghcr.io/aarondolenec/preisMengenDiagramm:latest
+      - name: preismengendiagramm
+        image: ghcr.io/aarondolenec/preismengendiagramm:latest
         ports:
         - containerPort: 80
         resources:
@@ -218,7 +240,7 @@ npm run preview
 |-------|----------|
 | **Curves not visible** | Open browser DevTools (F12) → Console. Check for JavaScript errors. Verify curve parameters are valid (position/elasticity 0-100). |
 | **Docker image won't build** | Ensure Node.js 20+ and npm are installed. Run `npm install` before building. |
-| **Container exits immediately** | Check logs: `docker logs preisMengenDiagramm`. Ensure port 8080 is not already in use. |
+| **Container exits immediately** | Check logs: `docker logs preismengendiagramm`. Ensure port 8080 is not already in use. |
 | **Dark mode preference not saved** | Clear browser cache and localStorage: DevTools → Application → Storage → Clear Site Data. |
 | **GHCR authentication fails** | Verify Personal Access Token has `write:packages` permission. Use `ghcr.io` (not `docker.io`). |
 | **Performance issues with many curves** | App uses SVG rendering (not Canvas). Consider limiting to 5-10 curves per diagram for smooth interaction. |
