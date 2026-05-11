@@ -280,7 +280,7 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
     demands.forEach((d) => {
       supplies.forEach((s) => {
         const combinedB = d.b + s.b;
-        if (combinedB === 0) return;
+        if (combinedB === 0) return; 
 
         const qStar = (d.a - s.a) / combinedB;
         const pStar = d.a - d.b * qStar;
@@ -294,7 +294,7 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
   }, [mathCurves]);
 
   const width = 800; const height = 600; const padding = 60;
-  const maxAxis = 100;
+  const maxAxis = 100; 
   const mapCoord = (val, isY = false) => {
     if (isY) return height - padding - (val / maxAxis) * (height - padding * 2);
     return padding + (val / maxAxis) * (width - padding * 2);
@@ -316,6 +316,7 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
       className={`relative bg-white rounded-2xl shadow-lg transition-all duration-200 cursor-pointer flex flex-col group overflow-hidden
         ${isActive ? 'ring-4 ring-blue-500 transform scale-[1.01]' : 'hover:shadow-xl hover:ring-2 hover:ring-slate-300'}`}
     >
+      {/* Chart Toolbar */}
       <div className={`absolute top-4 right-4 z-10 flex gap-2 transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
         <button onClick={(e) => { e.stopPropagation(); onDuplicate(); }} className="p-2 bg-white text-slate-700 rounded-lg shadow-md hover:bg-slate-50 border border-slate-200" title="Graph duplizieren">
           <Copy className="w-4 h-4" />
@@ -340,6 +341,7 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
           <text x={width / 2} y={padding - 10} textAnchor="middle" fontSize="22" fontWeight="bold" fill="#1e293b">{chart.title}</text>
 
+          {/* Achsen */}
           <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#334155" strokeWidth="3" markerStart="url(#arrow)" />
           <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#334155" strokeWidth="3" markerEnd="url(#arrow)" />
           <text x={padding - 20} y={padding + 10} textAnchor="end" fontSize="18" fontWeight="bold" fill="#334155">Preis (P)</text>
@@ -349,6 +351,7 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
           <clipPath id={`clip-${chart.id}`}><rect x={padding} y={padding} width={width - padding*2} height={height - padding*2} /></clipPath>
 
           <g clipPath={`url(#clip-${chart.id})`}>
+            {/* Polices (Staatliche Eingriffe) */}
             {chart.policy.type !== 'none' && (() => {
               const p = chart.policy.price;
               const dCurve = mathCurves.filter(c => c.type === 'demand').pop();
@@ -377,9 +380,60 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
                 </g>
               );
             })()}
+
+            {/* Kurven */}
+            {mathCurves.map((curve) => {
+              let q1, q2, p1 = 200, p2 = -100;
+              
+              if (curve.b < 0.01) { // Waagerecht
+                q1 = -100; p1 = curve.a;
+                q2 = 200;  p2 = curve.a;
+              } else {
+                q1 = curve.type === 'demand' ? (curve.a - p1)/curve.b : (p1 - curve.a)/curve.b;
+                q2 = curve.type === 'demand' ? (curve.a - p2)/curve.b : (p2 - curve.a)/curve.b;
+              }
+
+              let labelQ = 90;
+              let labelP = curve.type === 'demand' ? curve.a - curve.b * labelQ : curve.a + curve.b * labelQ;
+              if (labelP < 5) { labelP = 5; labelQ = curve.type === 'demand' ? (curve.a - 5)/curve.b : (5 - curve.a)/curve.b; }
+              if (labelP > 95) { labelP = 95; labelQ = curve.type === 'demand' ? (curve.a - 95)/curve.b : (95 - curve.a)/curve.b; }
+
+              return (
+                <g key={curve.id}>
+                  <line x1={mapCoord(q1)} y1={mapCoord(p1, true)} x2={mapCoord(q2)} y2={mapCoord(p2, true)} stroke={curve.color} strokeWidth="4" strokeLinecap="round" />
+                  <rect x={mapCoord(labelQ)-12} y={mapCoord(labelP, true)-12} width="24" height="24" fill="white" rx="12" />
+                  <circle cx={mapCoord(labelQ)} cy={mapCoord(labelP, true)} r="12" fill="transparent" stroke={curve.color} strokeWidth="2" />
+                  <text x={mapCoord(labelQ)} y={mapCoord(labelP, true)} textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="bold" fill={curve.color}>{curve.name}</text>
+                </g>
+              );
+            })}
           </g>
+
+          {/* Eingriffs-Label außerhalb Clip */}
+          {chart.policy.type !== 'none' && (
+            <text x={padding - 10} y={mapCoord(chart.policy.price, true)} textAnchor="end" dominantBaseline="middle" fontSize="14" fontWeight="bold" fill="#d97706">
+              {chart.policy.type === 'ceiling' ? 'P_max' : 'P_min'}
+            </text>
+          )}
+
+          {/* Schnittpunkte */}
+          {intersections.map((pt, i) => (
+            <g key={`eq-${i}`}>
+              <line x1={padding} y1={mapCoord(pt.p, true)} x2={mapCoord(pt.q)} y2={mapCoord(pt.p, true)} stroke="#475569" strokeWidth="2" strokeDasharray="5,5" />
+              <line x1={mapCoord(pt.q)} y1={mapCoord(pt.p, true)} x2={mapCoord(pt.q)} y2={height - padding} stroke="#475569" strokeWidth="2" strokeDasharray="5,5" />
+              <circle cx={mapCoord(pt.q)} cy={mapCoord(pt.p, true)} r="6" fill="#1e293b" stroke="white" strokeWidth="2" />
+              <text x={padding - 10} y={mapCoord(pt.p, true)} textAnchor="end" dominantBaseline="middle" fontSize="14" fontWeight="bold" fill="#1e293b">P*</text>
+              <text x={mapCoord(pt.q)} y={height - padding + 20} textAnchor="middle" fontSize="14" fontWeight="bold" fill="#1e293b">Q*</text>
+            </g>
+          ))}
         </svg>
       </div>
+
+      {!isActive && (
+        <div className="absolute inset-0 bg-white/20 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <span className="bg-slate-900 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg">Klicken zum Bearbeiten</span>
+        </div>
+      )}
     </div>
   );
 }
