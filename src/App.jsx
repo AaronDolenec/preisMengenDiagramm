@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Plus, Trash2, Download, BookOpen, Scale, ArrowRightLeft, Copy, LayoutGrid, Moon, Sun } from 'lucide-react';
+import { Plus, Trash2, Download, BookOpen, Scale, ArrowRightLeft, Copy, CopyPlus, LayoutGrid, Moon, Sun } from 'lucide-react';
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
@@ -316,6 +316,7 @@ export default function App() {
 
 function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDelete, darkMode }) {
   const svgRef = useRef(null);
+  const [copyFeedback, setCopyFeedback] = useState('');
 
   const mathCurves = useMemo(() => {
     return chart.curves.map(c => {
@@ -353,10 +354,91 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
     return padding + (val / maxAxis) * (width - padding * 2);
   };
 
+  const getSerializedSVG = () => {
+    if (!svgRef.current) return null;
+    return new XMLSerializer().serializeToString(svgRef.current);
+  };
+
+  const svgToPngBlob = (svgData) => {
+    return new Promise((resolve, reject) => {
+      const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      const img = new Image();
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          URL.revokeObjectURL(url);
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(url);
+          if (!blob) {
+            reject(new Error('PNG conversion failed'));
+            return;
+          }
+          resolve(blob);
+        }, 'image/png');
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Image load failed'));
+      };
+
+      img.src = url;
+    });
+  };
+
+  const copySVGToClipboard = async (e) => {
+    e.stopPropagation();
+    const svgData = getSerializedSVG();
+    if (!svgData || !navigator.clipboard) {
+      setCopyFeedback('Kopieren nicht verfugbar');
+      setTimeout(() => setCopyFeedback(''), 1800);
+      return;
+    }
+
+    try {
+      if (window.ClipboardItem && navigator.clipboard.write) {
+        const pngBlob = await svgToPngBlob(svgData);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml' });
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'image/png': pngBlob,
+            'image/svg+xml': svgBlob,
+            'text/plain': new Blob([svgData], { type: 'text/plain' })
+          })
+        ]);
+        setCopyFeedback('Bild kopiert');
+      } else {
+        await navigator.clipboard.writeText(svgData);
+        setCopyFeedback('SVG als Text kopiert');
+      }
+    } catch (error) {
+      try {
+        await navigator.clipboard.writeText(svgData);
+        setCopyFeedback('SVG als Text kopiert');
+      } catch (fallbackError) {
+        setCopyFeedback('Kopieren fehlgeschlagen');
+      }
+    }
+
+    setTimeout(() => setCopyFeedback(''), 1800);
+  };
+
   const exportSVG = (e) => {
     e.stopPropagation();
-    if (!svgRef.current) return;
-    const svgData = new XMLSerializer().serializeToString(svgRef.current);
+    const svgData = getSerializedSVG();
+    if (!svgData) return;
     const link = document.createElement('a');
     link.href = URL.createObjectURL(new Blob([svgData], { type: 'image/svg+xml' }));
     link.download = `VWL_Graph_${chart.title.replace(/\s+/g, '_')}.svg`;
@@ -375,8 +457,11 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
     >
       {/* Chart Toolbar */}
       <div className={`absolute top-4 right-4 z-10 flex gap-2 transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-        <button onClick={(e) => { e.stopPropagation(); onDuplicate(); }} className={`p-2 rounded-lg shadow-md border transition ${darkMode ? 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`} title="Graph duplizieren">
+        <button onClick={copySVGToClipboard} className={`p-2 rounded-lg shadow-md border transition ${darkMode ? 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`} title="SVG kopieren">
           <Copy className="w-4 h-4" />
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); onDuplicate(); }} className={`p-2 rounded-lg shadow-md border transition ${darkMode ? 'bg-slate-700 text-slate-300 border-slate-600 hover:bg-slate-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`} title="Graph duplizieren">
+          <CopyPlus className="w-4 h-4" />
         </button>
         <button onClick={exportSVG} className={`p-2 rounded-lg shadow-md transition ${darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-800 text-white hover:bg-slate-700'}`} title="SVG Export">
           <Download className="w-4 h-4" />
@@ -387,6 +472,11 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
           </button>
         )}
       </div>
+      {copyFeedback && (
+        <div className={`absolute top-16 right-4 z-10 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-md ${copyFeedback === 'SVG kopiert' ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'}`}>
+          {copyFeedback}
+        </div>
+      )}
 
       <div className="flex-1 p-4 aspect-[4/3]">
         <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
