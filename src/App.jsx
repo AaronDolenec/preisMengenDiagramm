@@ -484,9 +484,6 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
           </button>
         )}
       </div>
-      <div className={`absolute top-20 right-4 z-10 text-xs rounded px-2 py-1 shadow-sm transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${darkMode ? 'bg-slate-700 text-slate-300' : 'bg-white text-slate-700'}`}>
-        Als PNG kopieren (für Word)
-      </div>
       {copyFeedback && (
         <div className={`absolute top-16 right-4 z-10 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-md ${copyFeedback === 'SVG kopiert' ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'}`}>
           {copyFeedback}
