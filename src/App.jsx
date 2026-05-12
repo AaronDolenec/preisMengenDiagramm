@@ -408,17 +408,29 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
     }
 
     try {
-      if (window.ClipboardItem && navigator.clipboard.write) {
+      if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
         const pngBlob = await svgToPngBlob(svgData);
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml' });
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            'image/png': pngBlob,
-            'image/svg+xml': svgBlob,
-            'text/plain': new Blob([svgData], { type: 'text/plain' })
-          })
-        ]);
-        setCopyFeedback('Bild kopiert');
+
+        // Prefer writing only the PNG to clipboard so apps like Word paste the image,
+        // otherwise some apps pick the plain-text alternative. If that fails, try
+        // writing both PNG and SVG; final fallback is writing text.
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': pngBlob })
+          ]);
+          setCopyFeedback('Bild kopiert');
+        } catch (innerErr) {
+          try {
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml' });
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': pngBlob, 'image/svg+xml': svgBlob })
+            ]);
+            setCopyFeedback('Bild kopiert');
+          } catch (innerErr2) {
+            await navigator.clipboard.writeText(svgData);
+            setCopyFeedback('SVG als Text kopiert');
+          }
+        }
       } else {
         await navigator.clipboard.writeText(svgData);
         setCopyFeedback('SVG als Text kopiert');
@@ -471,6 +483,9 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
             <Trash2 className="w-4 h-4" />
           </button>
         )}
+      </div>
+      <div className={`absolute top-20 right-4 z-10 text-xs rounded px-2 py-1 shadow-sm transition-opacity ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} ${darkMode ? 'bg-slate-700 text-slate-300' : 'bg-white text-slate-700'}`}>
+        Als PNG kopieren (für Word)
       </div>
       {copyFeedback && (
         <div className={`absolute top-16 right-4 z-10 rounded-lg px-3 py-1.5 text-xs font-semibold shadow-md ${copyFeedback === 'SVG kopiert' ? 'bg-emerald-600 text-white' : 'bg-amber-600 text-white'}`}>
