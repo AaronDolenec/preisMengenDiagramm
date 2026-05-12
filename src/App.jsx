@@ -17,6 +17,20 @@ const calcIntercept = (type, position, b) => {
   }
 };
 
+const calcCurveAnchor = (type, position) => {
+  if (type === 'demand') {
+    return { q: position, p: position };
+  }
+  return { q: position, p: 100 - position };
+};
+
+const calcCurveSlope = (type, elasticity, flipped) => {
+  const baseSlope = calcSlope(elasticity);
+  const orientation = type === 'demand' ? -1 : 1;
+  const mirror = flipped ? -1 : 1;
+  return baseSlope * orientation * mirror;
+};
+
 export default function App() {
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
   const handleDarkModeToggle = (value) => {
@@ -327,10 +341,10 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
   const mathCurves = useMemo(() => {
     return chart.curves.map(c => {
-      const baseB = calcSlope(c.elasticity);
-      const b = c.flipped ? -baseB : baseB;
-      const a = calcIntercept(c.type, c.position, b);
-      return { ...c, a, b };
+      const anchor = calcCurveAnchor(c.type, c.position);
+      const slope = calcCurveSlope(c.type, c.elasticity, c.flipped);
+      const intercept = anchor.p - (slope * anchor.q);
+      return { ...c, anchorQ: anchor.q, anchorP: anchor.p, slope, intercept };
     });
   }, [chart.curves]);
 
@@ -341,11 +355,11 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
     demands.forEach((d) => {
       supplies.forEach((s) => {
-        const combinedB = d.b + s.b;
-        if (combinedB === 0) return; 
+        const slopeDelta = d.slope - s.slope;
+        if (slopeDelta === 0) return;
 
-        const qStar = (d.a - s.a) / combinedB;
-        const pStar = d.a - d.b * qStar;
+        const qStar = (s.intercept - d.intercept) / slopeDelta;
+        const pStar = d.slope * qStar + d.intercept;
 
         if (qStar >= -10 && qStar <= 150 && pStar >= -10 && pStar <= 150) {
           points.push({ q: qStar, p: pStar, dName: d.name, sName: s.name });
@@ -567,8 +581,8 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
               const sCurve = mathCurves.filter(c => c.type === 'supply').pop();
               
               let qD = 0, qS = 0;
-              if (dCurve) qD = dCurve.b < 0.01 ? maxAxis : (dCurve.a - p) / dCurve.b;
-              if (sCurve) qS = sCurve.b < 0.01 ? maxAxis : (p - sCurve.a) / sCurve.b;
+              if (dCurve) qD = Math.abs(dCurve.slope) < 0.01 ? maxAxis : (p - dCurve.intercept) / dCurve.slope;
+              if (sCurve) qS = Math.abs(sCurve.slope) < 0.01 ? maxAxis : (p - sCurve.intercept) / sCurve.slope;
 
               qD = Math.max(0, Math.min(qD, maxAxis));
               qS = Math.max(0, Math.min(qS, maxAxis));
@@ -592,20 +606,21 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
             {/* Kurven */}
             {mathCurves.map((curve) => {
-              let q1, q2, p1 = 200, p2 = -100;
-              
-              if (curve.b < 0.01) {
-                q1 = -100; p1 = curve.a;
-                q2 = 200;  p2 = curve.a;
-              } else {
-                q1 = curve.type === 'demand' ? (curve.a - p1)/curve.b : (p1 - curve.a)/curve.b;
-                q2 = curve.type === 'demand' ? (curve.a - p2)/curve.b : (p2 - curve.a)/curve.b;
-              }
+              const q1 = -20;
+              const q2 = 120;
+              const p1 = curve.slope * q1 + curve.intercept;
+              const p2 = curve.slope * q2 + curve.intercept;
 
-              let labelQ = 90;
-              let labelP = curve.type === 'demand' ? curve.a - curve.b * labelQ : curve.a + curve.b * labelQ;
-              if (labelP < 5) { labelP = 5; labelQ = curve.type === 'demand' ? (curve.a - 5)/curve.b : (5 - curve.a)/curve.b; }
-              if (labelP > 95) { labelP = 95; labelQ = curve.type === 'demand' ? (curve.a - 95)/curve.b : (95 - curve.a)/curve.b; }
+              let labelQ = curve.anchorQ + 18;
+              let labelP = curve.slope * labelQ + curve.intercept;
+              if (labelP < 5) {
+                labelP = 5;
+                labelQ = Math.abs(curve.slope) < 0.01 ? curve.anchorQ : (labelP - curve.intercept) / curve.slope;
+              }
+              if (labelP > 95) {
+                labelP = 95;
+                labelQ = Math.abs(curve.slope) < 0.01 ? curve.anchorQ : (labelP - curve.intercept) / curve.slope;
+              }
 
               return (
                 <g key={curve.id}>
