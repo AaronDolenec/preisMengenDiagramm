@@ -28,8 +28,8 @@ export default function App() {
       id: 'chart-1',
       title: 'Markt A (Ausgangslage)',
       curves: [
-        { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
-        { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+        { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6', flipped: false },
+        { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444', flipped: false },
       ],
       policy: { type: 'none', price: 50 }
     }
@@ -43,8 +43,8 @@ export default function App() {
       id: Date.now().toString(),
       title: `Markt ${charts.length + 1}`,
       curves: [
-        { id: Date.now().toString() + 'd', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
-        { id: Date.now().toString() + 's', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+        { id: Date.now().toString() + 'd', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6', flipped: false },
+        { id: Date.now().toString() + 's', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444', flipped: false },
       ],
       policy: { type: 'none', price: 50 }
     };
@@ -90,7 +90,8 @@ export default function App() {
       name: isDemand ? (existingCount === 0 ? 'D' : `D${existingCount + 1}`) : (existingCount === 0 ? 'S' : `S${existingCount + 1}`),
       position: isDemand ? 70 : 30,
       elasticity: 50,
-      color: COLORS[activeChart.curves.length % COLORS.length]
+      color: COLORS[activeChart.curves.length % COLORS.length],
+      flipped: false
     };
     updateActiveChart({ curves: [...activeChart.curves, newCurve] });
   };
@@ -104,52 +105,52 @@ export default function App() {
       case 'initial':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
-            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6', flipped: false },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444', flipped: false },
           ], policy: { type: 'none', price: 50 }
         }); break;
       case 'inelastic_demand':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 0, color: '#3b82f6' },
-            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 0, color: '#3b82f6', flipped: false },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444', flipped: false },
           ], policy: { type: 'none', price: 50 }
         }); break;
       case 'elastic_supply':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
-            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 100, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6', flipped: false },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 100, color: '#ef4444', flipped: false },
           ], policy: { type: 'none', price: 50 }
         }); break;
       case 'demand_shift':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'D₁', position: 40, elasticity: 50, color: '#93c5fd' },
-            { id: 'd2', type: 'demand', name: 'D₂', position: 70, elasticity: 50, color: '#2563eb' },
-            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D₁', position: 40, elasticity: 50, color: '#93c5fd', flipped: false },
+            { id: 'd2', type: 'demand', name: 'D₂', position: 70, elasticity: 50, color: '#2563eb', flipped: false },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444', flipped: false },
           ], policy: { type: 'none', price: 50 }
         }); break;
       case 'supply_shift':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
-            { id: 's1', type: 'supply', name: 'S₁', position: 30, elasticity: 50, color: '#fca5a5' },
-            { id: 's2', type: 'supply', name: 'S₂', position: 70, elasticity: 50, color: '#dc2626' },
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6', flipped: false },
+            { id: 's1', type: 'supply', name: 'S₁', position: 30, elasticity: 50, color: '#fca5a5', flipped: false },
+            { id: 's2', type: 'supply', name: 'S₂', position: 70, elasticity: 50, color: '#dc2626', flipped: false },
           ], policy: { type: 'none', price: 50 }
         }); break;
       case 'tax':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
-            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6', flipped: false },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444', flipped: false },
           ], policy: { type: 'ceiling', price: 60 }
         }); break;
       case 'subsidy':
         updateActiveChart({
           curves: [
-            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6' },
-            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444' },
+            { id: 'd1', type: 'demand', name: 'D', position: 50, elasticity: 50, color: '#3b82f6', flipped: false },
+            { id: 's1', type: 'supply', name: 'S', position: 50, elasticity: 50, color: '#ef4444', flipped: false },
           ], policy: { type: 'floor', price: 40 }
         }); break;
       default: break;
@@ -226,7 +227,12 @@ export default function App() {
                         {curve.type === 'demand' ? 'Nachfrage' : 'Angebot'}
                       </span>
                     </div>
-                    <button onClick={() => removeCurve(curve.id)} className={`${darkMode ? 'text-slate-500 hover:text-red-400' : 'text-slate-400 hover:text-red-500'} transition`}><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => updateCurve(curve.id, 'flipped', !curve.flipped)} title={curve.flipped ? 'Spiegelung entfernen' : 'Kurve spiegeln'} className={`p-2 rounded-md transition ${curve.flipped ? (darkMode ? 'bg-slate-600 text-white' : 'bg-slate-200 text-slate-900') : (darkMode ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-white text-slate-600 hover:bg-slate-50')}`}>
+                        <ArrowRightLeft className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => removeCurve(curve.id)} className={`${darkMode ? 'text-slate-500 hover:text-red-400' : 'text-slate-400 hover:text-red-500'} transition`}><Trash2 className="w-4 h-4" /></button>
+                    </div>
                   </div>
 
                   {/* VWL Sliders */}
@@ -250,6 +256,7 @@ export default function App() {
                       <div className={`flex justify-between text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'} mt-1`}>
                         <span>Unelastisch (Steil)</span><span>Elastisch (Flach)</span>
                       </div>
+                      {/* flip button now available in the curve header */}
                     </div>
                   </div>
                 </div>
@@ -320,7 +327,8 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
   const mathCurves = useMemo(() => {
     return chart.curves.map(c => {
-      const b = calcSlope(c.elasticity);
+      const baseB = calcSlope(c.elasticity);
+      const b = c.flipped ? -baseB : baseB;
       const a = calcIntercept(c.type, c.position, b);
       return { ...c, a, b };
     });
@@ -359,7 +367,9 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
     return new XMLSerializer().serializeToString(svgRef.current);
   };
 
-  const svgToPngBlob = (svgData) => {
+  // Convert serialized SVG to a PNG Blob. Accepts an optional `scale`
+  // parameter to increase pixel density for high-resolution exports.
+  const svgToPngBlob = (svgData, scale = Math.max(1, window.devicePixelRatio || 1) * 2) => {
     return new Promise((resolve, reject) => {
       const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
       const url = URL.createObjectURL(svgBlob);
@@ -367,8 +377,10 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
+        const scaledWidth = Math.round(width * scale);
+        const scaledHeight = Math.round(height * scale);
+        canvas.width = scaledWidth;
+        canvas.height = scaledHeight;
         const ctx = canvas.getContext('2d');
 
         if (!ctx) {
@@ -377,8 +389,9 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
           return;
         }
 
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
+        // Improve rendering quality by drawing the image at the scaled size.
+        ctx.clearRect(0, 0, scaledWidth, scaledHeight);
+        ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
         canvas.toBlob((blob) => {
           URL.revokeObjectURL(url);
           if (!blob) {
@@ -409,7 +422,8 @@ function ChartRenderer({ chart, isActive, onSelect, onDuplicate, onDelete, canDe
 
     try {
       if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
-        const pngBlob = await svgToPngBlob(svgData);
+        // Use a larger scale for high-resolution clipboard images.
+        const pngBlob = await svgToPngBlob(svgData, 3);
 
         // Prefer writing only the PNG to clipboard so apps like Word paste the image,
         // otherwise some apps pick the plain-text alternative. If that fails, try
